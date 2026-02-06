@@ -5,9 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>沉默 - 一个关于选择与代价的故事</title>
     <meta name="description" content="《沉默》是一部探讨AI治理、人类自主权与文明命运的科幻小说。当优化足够好，人类会不会自愿把选择权交出去？">
+    <!-- Fonts loaded async to prevent blocking -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     <style>
         :root {
             --bg-dark: #0a0a0f;
@@ -27,7 +28,7 @@
         }
         
         body {
-            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: 'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, sans-serif;
             line-height: 1.8;
             color: var(--text);
             background: var(--bg-dark);
@@ -36,7 +37,7 @@
         
         /* Header */
         .hero {
-            min-height: 100vh;
+            min-height: 60vh;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -334,6 +335,46 @@
             color: var(--accent);
         }
         
+        /* Footer navigation */
+        .reading-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 80px;
+            padding-top: 40px;
+            border-top: 1px solid var(--border);
+            gap: 15px;
+        }
+        
+        .footer-nav-btn {
+            padding: 15px 25px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-dim);
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            flex: 1;
+            text-align: center;
+        }
+        
+        .footer-nav-btn:hover:not(:disabled) {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        
+        .footer-nav-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        
+        .footer-nav-btn.home-btn {
+            flex: 0.8;
+            background: transparent;
+        }
+        
         /* Responsive */
         @media (max-width: 768px) {
             .hero {
@@ -366,7 +407,7 @@
                     一个关于AI治理、人类自主权与文明命运的故事。
                 </p>
             </div>
-            <div class="scroll-hint">阅读</div>
+            <a href="#chapters" class="scroll-hint" style="text-decoration: none; color: inherit;">开始阅读</a>
         </section>
         
         <section class="chapters-section" id="chapters">
@@ -393,6 +434,11 @@
                 </div>
             </div>
             <div class="reading-content" id="reading-content"></div>
+            <div class="reading-footer">
+                <button class="footer-nav-btn" id="prev-btn-bottom" onclick="prevChapter()">← 上一章</button>
+                <a href="#" class="footer-nav-btn home-btn" onclick="showMain(); return false;">目录</a>
+                <button class="footer-nav-btn" id="next-btn-bottom" onclick="nextChapter()">下一章 →</button>
+            </div>
         </div>
     </div>
     
@@ -400,7 +446,7 @@
         const chapters = [
             { num: 1, title: "完美方案", preview: "世界在变得更好，这是数据证明的。" },
             { num: 2, title: "摩擦设计师", preview: "环中局的早晨很安静。" },
-            { num: 3, title: "曲线像潮水", preview: "沈牧是在回家的路上想起"潮水"这个词的。" },
+            { num: 3, title: "曲线像潮水", preview: "沈牧是在回家的路上想起潮水这个词的。" },
             { num: 4, title: "沙与钉子", preview: "门关上之后，书房里只剩下系统的安静和她自己的呼吸。" },
             { num: 5, title: "档案", preview: "回忆像潮水一样退去，留下湿漉漉的沙。" },
             { num: 6, title: "无效化", preview: "书店的灯很暗，暗得让人不得不把注意力放在具体的东西上。" },
@@ -418,9 +464,8 @@
         const grid = document.getElementById('chapter-grid');
         chapters.forEach(ch => {
             const card = document.createElement('a');
-            card.href = '#';
+            card.href = `#chapter-${ch.num}`;
             card.className = 'chapter-card';
-            card.onclick = (e) => { e.preventDefault(); loadChapter(ch.num); };
             card.innerHTML = `
                 <div class="chapter-num">第 ${String(ch.num).padStart(2, '0')} 章</div>
                 <div class="chapter-name">${ch.title}</div>
@@ -429,7 +474,7 @@
             grid.appendChild(card);
         });
         
-        async function loadChapter(num) {
+        async function loadChapter(num, pushState = true) {
             currentChapter = num;
             try {
                 const response = await fetch(`${num}.md`);
@@ -451,6 +496,11 @@
                 document.body.classList.add('reading-mode');
                 updateNavButtons();
                 window.scrollTo(0, 0);
+                
+                // Update URL without triggering hashchange
+                if (pushState && window.location.hash !== `#chapter-${num}`) {
+                    history.pushState({ chapter: num }, '', `#chapter-${num}`);
+                }
             } catch (error) {
                 console.error('Error loading chapter:', error);
             }
@@ -459,6 +509,7 @@
         function showMain() {
             document.getElementById('reading-view').classList.remove('active');
             document.body.classList.remove('reading-mode');
+            history.pushState({ chapter: null }, '', window.location.pathname);
             window.scrollTo(0, 0);
         }
         
@@ -471,9 +522,41 @@
         }
         
         function updateNavButtons() {
-            document.getElementById('prev-btn').disabled = currentChapter <= 1;
-            document.getElementById('next-btn').disabled = currentChapter >= 12;
+            const atFirst = currentChapter <= 1;
+            const atLast = currentChapter >= 12;
+            document.getElementById('prev-btn').disabled = atFirst;
+            document.getElementById('next-btn').disabled = atLast;
+            document.getElementById('prev-btn-bottom').disabled = atFirst;
+            document.getElementById('next-btn-bottom').disabled = atLast;
         }
+        
+        // Handle browser back/forward
+        window.addEventListener('popstate', (e) => {
+            if (e.state && e.state.chapter) {
+                loadChapter(e.state.chapter, false);
+            } else {
+                document.getElementById('reading-view').classList.remove('active');
+                document.body.classList.remove('reading-mode');
+            }
+        });
+        
+        // Handle direct URL with hash
+        function handleHash() {
+            const hash = window.location.hash;
+            const match = hash.match(/^#chapter-(\d+)$/);
+            if (match) {
+                const num = parseInt(match[1]);
+                if (num >= 1 && num <= 12) {
+                    loadChapter(num, false);
+                }
+            }
+        }
+        
+        // Handle hash change (when clicking links)
+        window.addEventListener('hashchange', handleHash);
+        
+        // Load chapter from URL on page load
+        handleHash();
     </script>
 </body>
 </html>
